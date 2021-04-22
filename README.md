@@ -1,0 +1,1 @@
+# centreon-custom-views-management
