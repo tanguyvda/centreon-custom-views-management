@@ -1,0 +1,5 @@
+{literal}
+  <script>
+    console.log('coucou');
+  </script>
+{/literal}
