@@ -1,4 +1,5 @@
 <head>
+  <link href="./modules/centreon-custom-views-management/lib/googlefont.css" rel="stylesheet" type="text/css"/>
   <link href="./modules/centreon-custom-views-management/lib/materialize.min.css" rel="stylesheet" type="text/css"/>
   <link href="./modules/centreon-custom-views-management/core/index.css" rel="stylesheet" type="text/css"/>
 </head>

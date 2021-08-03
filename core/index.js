@@ -75,8 +75,17 @@ function triggerModal (element, href) {
 function appendDataToModal(data, id) {
   $('#contact_views_modal_content').empty()
   html = '<table><thead><tr><th>Name</th><th>Owner</th><th>Locked</th></tr></thead><tbody>';
+
   $(data).each(function (index) {
-    html += `<tr><td>${data[index].name}</td><td>${data[index].is_owner}</td><td>${data[index].locked}</td></tr>`
+    let lock_ico = '<i class="material-icons" style="color:red">lock_outline</i>';
+    let owner_ico = '<i class="material-icons" style="opacity:25%">person_pin</i>'
+    if (data[index].locked === '0') {
+      lock_ico = '<i class="material-icons" style="color:green">lock_open</i>';
+    }
+    if (data[index].is_owner === '1') {
+      owner_ico = '<i class="material-icons" style="opacity:100%">person_pin</i>'
+    }
+    html += `<tr><td>${data[index].name}</td><td>${owner_ico}</td><td><i class="material-icons">${lock_ico}</i></td></tr>` //lock_open person_pin lock_outling
   });
   html += '</tbody></table>';
   $('#contact_views_modal_content').append(html)
