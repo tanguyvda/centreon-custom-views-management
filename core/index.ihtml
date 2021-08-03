@@ -1,3 +1,30 @@
+<head>
+  <link href="./modules/centreon-custom-views-management/lib/materialize.min.css" rel="stylesheet" type="text/css"/>
+  <link href="./modules/centreon-custom-views-management/core/index.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+  <script type="text/javascript" src="./modules/centreon-custom-views-management/lib/materialize.min.js"></script>
+  <script type="text/javascript" src="./modules/centreon-custom-views-management/core/index.js"></script>
+  <div id="contact_selection"  class="row">
+    {$form.contacts.html}
+  </div>
+  <div id="action-bar" class="row">
+    <button class="waves-effect waves-light btn col s2" onClick="getContact()">Import Views</button>
+    <button class="waves-effect waves-light btn col s2 offset-s1">Export Views</button>
+  </div>
+  <div id="error" style="color:red;font-weight: bold"></div>
+  <!--<div id="contact_selection">
+     <button onClick="getContact()">Search</button>
+  </div>-->
+  <div id="user_custom_views">
+  </div>
+
+  <!-- Modal -->
+  <a id="contact_views_modal_trigger" class="waves-effect waves-light btn modal-trigger" href="#contact_views_modal" style="display:none"></a>
+  <div id="contact_views_modal" class="modal bottom-sheet">
+    <div id="contact_views_modal_content" class="modal-content"></div>
+  </div>
+</body>
 {literal}
   <script>
     console.log('coucou');
