@@ -1,6 +1,6 @@
 <?php
 
-function getContactCustomViews($pearDB, $contactId) {
+function getContactCustomViews($pearDB, $contactId, $adminId) {
     $query = "SELECT cv.custom_view_id, cv.name, cvur.is_owner, cvur.locked, cvur.is_consumed, cvur.is_share, " .
             "c.contact_name, c.contact_id FROM custom_view_user_relation cvur, custom_views cv, contact c " .
             "WHERE c.contact_id = cvur.user_id AND cvur.custom_view_id = cv.custom_view_id AND c.contact_id = :user";
@@ -15,9 +15,38 @@ function getContactCustomViews($pearDB, $contactId) {
 
     $result = [];
     while ($row = $res->fetch()) {
+        if (checkAdminOwnership($pearDB, $row['custom_view_id'], $adminId)) {
+            $row['already_owned'] = true;
+        } else {
+            $row['already_owned'] = false;
+        }
+        $row['name'] = htmlentities($row['name'], ENT_QUOTES, 'UTF-8');
         $result[] = $row;
     }
+
     return $result;
+}
+
+function checkAdminOwnership($pearDB, $customViewId, $adminId) {
+    $query = "SELECT SQL_CALC_FOUND_ROWS custom_view_id FROM custom_view_user_relation " . 
+        "WHERE user_id=:user_id AND custom_view_id=:cv_id AND is_owner=1";
+
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
+    $res->bindParam(':user_id', $adminId, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+    } catch (\PDOException $e) {
+        throw new Exception("Could not check admin ownership for custom view: " . $customViewId . 
+            " and admin user: " . $adminId . ". Error message is: " . $e->getMessage());
+    }
+
+    if ($res->rowCount() > 0) {
+        return true;
+    }
+
+    return false;
 }
 
 function becomeOwner($pearDB, $customViewId, $userId) {
@@ -28,7 +57,10 @@ function becomeOwner($pearDB, $customViewId, $userId) {
         if ($ownerInfo['id'] === $userId) {
             throw new Exception("You already are the owner of custom view: " . $customViewId);
         }
-
+        $file = fopen('/var/opt/rh/rh-php72/log/php-fpm/ccvm', 'a') or die ('Unable to open file!');
+        fwrite($file, print_r("\nownership\n", true));
+        fwrite($file, print_r($ownerInfo, true));
+        fclose($file);
         removeOwnership($pearDB, $customViewId, $ownerInfo['id']);
         addOwnership($pearDB, $customViewId, $userId);
         // update widget_preferences using widget_views id table
@@ -80,6 +112,7 @@ function addOwnership($pearDB, $customViewId, $userId) {
 
     $res = $pearDB->prepare($query);
     $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
 
     try {
         $res->execute();
@@ -180,7 +213,7 @@ function giveBackOwnership($pearDB, $customViewId, $userId) {
 }
 
 function getOldOwner($pearDB, $customViewId, $userId) {
-    $query = "SELECT SQL_CAL_FOUND_ROWS old_owner as id FROM ccvm_custom_view_ownership WHERE new_owner=:user_id AND custom_view_id=:cv_id";
+    $query = "SELECT SQL_CALC_FOUND_ROWS old_owner as id FROM mod_ccvm_custom_view_ownership WHERE new_owner=:user_id AND custom_view_id=:cv_id";
 
     $res = $pearDB->prepare($query);
     $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
@@ -247,18 +280,66 @@ function deletePreferences($pearDB, $widgetViewId, $userId) {
 }
 
 function removeModification($pearDB, $customViewId, $newOwnerId, $oldOwnerId) {
-    $query = "DELETE FROM ccvm_custom_view_ownership WHERE " .
-        "custom_view_id=:cv_id AND old_owner=:old_user AND new_owner=:new_owner";
+    $query = "DELETE FROM mod_ccvm_custom_view_ownership WHERE " .
+        "custom_view_id=:cv_id AND old_owner=:old_owner AND new_owner=:new_owner";
 
     $res = $pearDB->prepare($query);
     $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
-    $res->bindParam(':old_user', $oldOwnerId, \PDO::PARAM_INT);
-    $res->bindParam(':new_user', $newOwnerId, \PDO::PARAM_INT);
+    $res->bindParam(':old_owner', $oldOwnerId, \PDO::PARAM_INT);
+    $res->bindParam(':new_owner', $newOwnerId, \PDO::PARAM_INT);
 
     try {
         $res->execute();
     } catch (\PDOException $e) {
         throw new Exception("Could not remove ownership change for custom view: " . $customViewId . 
-            ".Old owner: " . $oldOwnerId . ", new owner: " . $newOwnerId . ". Error message is: " . $e->getMessage());
+            ". Old owner: " . $oldOwnerId . ", new owner: " . $newOwnerId . ". Error message is: " . $e->getMessage());
     }
+}
+
+function getSeizedViews($pearDB, $userId) {
+    $query = "SELECT cv.name, cv.custom_view_id FROM custom_views cv, mod_ccvm_custom_view_ownership ccvm " . 
+        "WHERE ccvm.custom_view_id=cv.custom_view_id AND ccvm.new_owner=:user_id";
+    
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+    } catch (\PDOException $e) {
+        throw new Exception("Could not list seized custom views for user: " . $userId . 
+            ". Error message is: " . $e->getMessage());
+    }
+
+    $result = [];
+    while ($row = $res->fetch()) {
+        $row['name'] = htmlentities($row['name'], ENT_QUOTES, 'UTF-8');
+        $result[] = $row;
+    }
+
+    return $result;
+}
+
+function getSharableViews($pearDB, $userId, $targetUser) {
+    $query = "SELECT ccvm.custom_view_id, :target_user AS user_id, locked, is_consumed " .
+    "FROM mod_ccvm_custom_view_ownership ccvm LEFT JOIN custom_view_user_relation cvur " .
+    "ON ccvm.custom_view_id = cvur.custom_view_id AND ccvm.new_owner=:user_id AND cvur.user_id=:target_user";
+
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+    $res->bindParam(':target_user', $targetUser, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+    } catch (\PDOException $e) {
+        throw new Exception("Could not list sharable custom views for owner: " . $userId . 
+            " and target user: " . $targetUser . ". Error message is: " . $e->getMessage());
+    }
+
+    $result = [];
+    while ($row = $res->fetch()) {
+        $row['name'] = htmlentities($row['name'], ENT_QUOTES, 'UTF-8');
+        $result[] = $row;
+    }
+
+    return $result;
 }

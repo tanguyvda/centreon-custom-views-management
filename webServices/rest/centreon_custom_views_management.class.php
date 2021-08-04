@@ -26,9 +26,10 @@ class CentreonCustomViewsManagement extends CentreonWebService
     }
 
     public function postListContactCustomViews() {
+        global $centreon;
         $contactId = filter_var($this->arguments['contact_id'], FILTER_SANITIZE_NUMBER_INT);
         try {
-            $result = getContactCustomViews($this->db, $contactId);
+            $result = getContactCustomViews($this->db, $contactId, $centreon->user->user_id);
         } catch (\Exception $e) {
             throw new RestBadRequestException($e->getMessage());
         }
@@ -43,6 +44,42 @@ class CentreonCustomViewsManagement extends CentreonWebService
         
         try {
             $result = becomeOwner($this->db, $customViewId, $centreon->user->user_id);
+        } catch (\Exception $e) {
+            throw new RestBadRequestException($e->getMessage());
+        }
+
+        return $result;
+    }
+
+    public function postGiveBackOwnership() {
+        global $centreon;
+        $customViewId = filter_var($this->arguments['custom_view_id'], FILTER_SANITIZE_NUMBER_INT);
+
+        try {
+            $result = giveBackOwnership($this->db, $customViewId, $centreon->user->user_id);
+        } catch (\Exception $e) {
+            throw new RestBadRequestException($e->getMessage());
+        }
+    }
+
+    public function getListSeizedViews() {
+        global $centreon;
+        
+        try {
+            $result = getSeizedViews($this->db, $centreon->user->user_id);
+        } catch (\Exception $e) {
+            throw new RestBadRequestException($e->getMessage());
+        }
+
+        return $result;
+    }
+
+    public function postListSharableViews() {
+        global $centreon;
+        $targetUser = filter_var($this->arguments['target_user'], FILTER_SANITIZE_NUMBER_INT);
+        
+        try {
+            $result = getSharableViews($this->db, $centreon->user->user_id, $targetUser);
         } catch (\Exception $e) {
             throw new RestBadRequestException($e->getMessage());
         }

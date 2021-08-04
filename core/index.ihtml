@@ -11,13 +11,10 @@
   </div>
   <div id="action-bar" class="row">
     <button class="waves-effect waves-light btn col s2" onClick="getContact()">Import Views</button>
-    <button class="waves-effect waves-light btn col s2 offset-s1">Export Views</button>
+    <button class="waves-effect waves-light btn col s2 offset-s1" onClick="shareViews()">Export Views</button>
   </div>
   <div id="error" style="color:red;font-weight: bold"></div>
-  <!--<div id="contact_selection">
-     <button onClick="getContact()">Search</button>
-  </div>-->
-  <div id="user_custom_views">
+  <div id="seized_custom_views">
   </div>
 
   <!-- Modal -->

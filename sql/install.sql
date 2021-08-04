@@ -16,7 +16,7 @@ CREATE TABLE `mod_ccvm_custom_view_ownership` (
   `new_owner` int(11) NOT NULL,
   `old_owner`int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 -- 
