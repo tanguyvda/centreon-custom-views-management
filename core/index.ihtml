@@ -13,8 +13,7 @@
     <button class="waves-effect waves-light btn col s2" onClick="getContact()">Import Views</button>
     <button class="waves-effect waves-light btn col s2 offset-s1" onClick="shareViews()">Export Views</button>
   </div>
-  <div id="error" style="color:red;font-weight: bold"></div>
-  <div id="seized_custom_views">
+  <div id="seized_custom_views" class="row">
   </div>
 
   <!-- Modal -->

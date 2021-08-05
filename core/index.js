@@ -4,7 +4,8 @@ function shareViews() {
   let contactInfo = $("#contacts").select2('data')
   // tell to select a user
   if (contactInfo[0].id === "") {
-    $("#error").append("You must select a contact first");
+    // $("#error").append("You must select a contact first");
+    M.toast({html: 'You must select a contact first!', classes: 'toastError'});
     return false;
   }
 
@@ -17,87 +18,45 @@ function shareViews() {
       target_user: contactInfo[0].id
     }),
     success: function(data) {
-      $('#contact_views_modal_content').empty();
-      let html = '<table><thead><tr><th>Name</th><th>Share/Remove</th><th>Lock/Unlock</th><th>Enable/Disable display</th></tr></thead><tbody>';
-      console.log(data);
-      let share_ico_html;
-      let share_ico;
-      let lock_ico_html;
-      let lock_ico;
-      let display_ico_html;
-      let display_ico;
-      let cv_id;
-      let user_id;
+      let cvId;
+      let userId;
       let locked;
       let consumed;
-      // let share;
+      let shared;
+      
+      $('#contact_views_modal_content').empty();
+      let html = '<table><thead><tr><th>Name</th><th>Share/Remove</th><th>Lock/Unlock</th><th>Enable/Disable display</th></tr></thead><tbody>';
+      
+      $(data).each(function () {
+        cvId = this.custom_view_id;
+        userId = this.user_id;
+        locked = this.locked;
+        consumed = this.is_consumed;
+        shared = this.is_share;
+        console.log(this);
 
-      $(data).each(function (index) {
-        cv_id = data[index].custom_view_id;
-        user_id = data[index].user_id;
-        locked = data[index].locked;
-        consumed = data[index].is_consumed;
-
-        // share design
-        share_ico = "stop_screen_share";
-        share_ico_html = `<button id="share_button_${cv_id}" data-cv="${cv_id}" data-user="${user_id}" data-locked="${locked}" data-consumed="${consumed}" onClick="shareToUser(this)" class="btn-floating`;
-        if (data[index].share !== null) {
-          share_ico = "screen_share";
-          share_ico_html += `" data-state="0"><i id="i_share_${cv_id}" class="material-icons">`;
-        } else {
-          share_ico_html += `" data-state="1"><i id="i_share_${cv_id}" class="material-icons">`;
-        }
-        share_ico_html += `${share_ico}</i></button>`;
-        console.log(share_ico_html);
-
-        // lock design
-        lock_ico = "lock_outline";
-        lock_ico_html = `<button id="lock_button_${cv_id}" data-cv="${cv_id}" data-user="${user_id}" data-locked="${locked}" data-consumed="${consumed}" onClick="shareToUser(this)" class="btn-floating `;
-        if (data[index].locked === null) {
-          lock_ico_html = ` class="btn-floating disabled" data-state="2"><i id="i_lock_${cv_id}" class="material-icons">`;
-        } else if (data[index].locked === 0) {
-          lock_ico = "lock_open";
-          lock_ico_html = `<button id="lock_button_${cv_id}" class="btn-floating" data-state="1"><i id="i_lock_${cv_id}" class="material-icons">`;
-        } else {
-          lock_ico_html = `class="btn-floating" data-state="0"><i id="i_lock_${cv_id}" class="material-icons">`;
-        }
-        lock_ico_html = `${lock_ico_html}${lock_ico}</i></button>`;
-
-        // display design
-        display_ico = "visibility";
-        display_ico_html = `<button id="display_button_${cv_id}" class="btn-floating" data-state="0"><i id="i_display_${cv_id}" class="material-icons">`;
-        if (data[index].is_consumed === 1) {
-          display_ico = "visibility_off";
-          display_ico_html = `<button id="display_button_${cv_id}" class="btn-floating" data-state="1"><i id="i_display_${cv_id}" class="material-icons">`;
-        } else if (data[index].is_consumed === null ) {
-          display_ico_html = `<button id="display_button_${cv_id}" class="btn-floating disabled" data-state="2"><i id="i_display_${cv_id}" class="material-icons">`;
-        }
-        display_ico_html = `${display_ico_html}${display_ico}</i></button>`;
-
-        html += `<tr><td>${cv_id}</td><td>${share_ico_html}</td><td>${lock_ico_html}</td><td>${display_ico_html}</td></tr>`; //lock_open person_pin lock_outling
-        
+        html += `<tr><td>${cvId}</td>` +
+          `<td>${buildShareButton(cvId, userId, shared)}</td>` +
+          `<td>${buildLockButton(cvId, userId, locked)}</td>` + 
+          `<td>${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
       });
       html += '</tbody></table>';
-      if (modal_instance === undefined) {
-        buildModal('contact_views_modal');
-      }
+
+      buildModal('contact_views_modal');
       $('#contact_views_modal_content').append(html);
       triggerModal($('#contact_views_modal_trigger'), "#contact_views_modal");
     },
     error: function(error) {
-      console.log(error)
+      M.toast({html: error.responseJSON, classes: 'toastError'});
     }
   });
 }
 
 function getContact() {
-    // remove old displayed data
-  $("#error").empty();
-  
   let contactInfo = $("#contacts").select2('data')
   // tell to select a user
   if (contactInfo[0].id === "") {
-    $("#error").append("You must select a contact first");
+    M.toast({html: 'You must select a contact first!', classes: 'toastError'});
     return false;
   }
 
@@ -119,87 +78,82 @@ function getContact() {
       }
     },
     error: function (error) {
-      console.log(error);
-    },
-    fail: function(fail) {
-      console.log(fail);
+      M.toast({html: error.responseJSON, classes: 'toastError'});
     }
   });
 }
 
-
-
 function becomeOwner(el) {
-  let cv_id = parseInt(el.dataset.cv_id);
-  let cv_name = el.dataset.cv_name
+  let cvId = parseInt(el.dataset.cvid);
+  let cv_name = el.dataset.cvname
   $.ajax({
     url: './api/internal.php?object=centreon_custom_views_management&action=BecomeOwner',
     type: 'POST',
     contentType: 'application/json',
     dataType: 'json',
     data: JSON.stringify({
-      custom_view_id: cv_id
+      custom_view_id: cvId
     }),
     success: function() {
-      addNewCvCard(cv_name, cv_id)
-      $("#btn_add_view_" + cv_id).addClass("disabled");
+      addNewCvCard(cv_name, cvId)
+      $("#btn_add_view_" + cvId).addClass("disabled");
     },
     error: function(error) {
-      console.log(error)
+      M.toast({html: error.responseJSON, classes: 'toastError'});
     }
   });
 }
 
 function buildModal (id) {
-  const elems = document.querySelectorAll('#' + id);
-  modal_instance = M.Modal.init(elems);
+  if (modal_instance === undefined) {
+    const elems = document.querySelectorAll('#' + id);
+    modal_instance = M.Modal.init(elems);
+  }
 }
 
 function triggerModal (element, href) {
     element.attr('href', href);
     element[0].click();
-    // element.removeAttr('href');
-    // element.removeClass('modal-trigger');
 }
 
 function appendDataToModal(data, id) {
   $('#contact_views_modal_content').empty()
   html = '<table><thead><tr><th>Name</th><th>Owner</th><th>Locked</th><th>Seize View</th></tr></thead><tbody>';
 
-  $(data).each(function (index) {
+  $(data).each(function () {
     // lock design
-    let lock_ico = '<i class="material-icons" style="color:red">lock_outline</i>';
-    if (data[index].locked === '0') {
-      lock_ico = '<i class="material-icons" style="color:green">lock_open</i>';
+    let lockIco = '<i class="material-icons" style="color:red">lock_outline</i>';
+    if (this.locked === '0') {
+      lockIco = '<i class="material-icons" style="color:green">lock_open</i>';
     }
     
     // owner design
     let owner_ico = '<i class="material-icons" style="opacity:25%">person_pin</i>';
-    if (data[index].is_owner === '1') {
+    if (this.is_owner === '1') {
       owner_ico = '<i class="material-icons" style="opacity:100%">person_pin</i>';
     }
 
-    let add_button = `<button id="btn_add_view_${data[index].custom_view_id}" class="btn-floating" data-cv_id="${data[index].custom_view_id}" data-cv_name="${data[index].name}" onClick="becomeOwner(this)"><i class="material-icons">add</i></button>`;
-    if (data[index].already_owned) {
-      add_button = `<button id="btn_add_view_${data[index].custom_view_id}" class="btn-floating disabled" data-cv_id="${data[index].custom_view_id}" data-cv_name="${data[index].name}"><i class="material-icons">add</i></button>`;
+    let add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating" data-cvid="${this.custom_view_id}" data-cvname="${this.name}" onClick="becomeOwner(this)"><i class="material-icons">add</i></button>`;
+    if (this.already_owned) {
+      add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating disabled" data-cvid="${this.custom_view_id}" data-cvname="${this.name}"><i class="material-icons">add</i></button>`;
     }
 
-    html += `<tr><td>${data[index].name}</td><td>${owner_ico}</td><td>${lock_ico}</td><td>${add_button}</td></tr>`; //lock_open person_pin lock_outling
+    html += `<tr><td>${this.name}</td><td>${owner_ico}</td><td>${lockIco}</td><td>${add_button}</td></tr>`; //lock_open person_pin lock_outling
   });
 
   html += '</tbody></table>';
   $('#contact_views_modal_content').append(html);
 }
 
-function addNewCvCard(cv_name, cv_id) {
-  let html = `<div id="card_${cv_id}" class="row">` +
-    '<div class="col s6">' +
+function addNewCvCard(cv_name, cvId) {
+  let html = `<div id="card_${cvId}" class="col s3">` +
+    '<div class="col s12">' +
     '<div class="card blue-grey darken-1">' +
       '<div class="card-content white-text">' +
         `<span class="card-title">${cv_name}</span>` +
       '</div>' +
       '<div class="card-action">' +
-        `<a href="#" data-cv_id="${cv_id}" data-cv_name="${cv_name}" onClick="giveBackOwnership(this)">Give back ownership</a>` +
+        `<a href="#" data-cvid="${cvId}" data-cvname="${cv_name}" onClick="giveBackOwnership(this)">Give back ownership</a>` +
       '</div>' +
     '</div>' +
   '</div>' +
@@ -208,29 +162,165 @@ function addNewCvCard(cv_name, cv_id) {
   $("#seized_custom_views").prepend(html);
 }
 
-function removeCard(cv_id) {
-  $("#card_" + cv_id).remove();
+function removeCard(cvId) {
+  $("#card_" + cvId).remove();
 }
 
-
 function giveBackOwnership(el) {
-  let cv_id = parseInt(el.dataset.cv_id);
+  let cvId = parseInt(el.dataset.cvid);
   $.ajax({
     url: './api/internal.php?object=centreon_custom_views_management&action=GiveBackOwnership',
     type: 'POST',
     contentType: 'application/json',
     dataType: 'json',
     data: JSON.stringify({
-      custom_view_id: cv_id
+      custom_view_id: cvId
     }),
     success: function() {
-      console.log(cv_id)
-      removeCard(cv_id)
+      removeCard(cvId)
     },
     error: function(error) {
-      console.log(error)
+      M.toast({html: error.responseJSON, classes: 'toastError'});
     }
   })
+}
+
+function buildShareButton(cvId, userId, shared) {
+  let shareIco = "screen_share";
+  let shareIcoHtml = `<button id="share_button_${cvId}" data-position="top" data-cv="${cvId}" data-user="${userId}" onClick="shareToUser(this)" class="btn-floating tooltipped `;
+  let tooltipMessage = 'data-tooltip="Share view"';
+  if (shared !== null) {
+    shareIco = "stop_screen_share";
+    shareIcoHtml += "shared";
+    tooltipMessage = 'data-tooltip="Withdraw view"'
+  }
+
+  return `${shareIcoHtml}" ${tooltipMessage}><i id="i_share_${cvId}" class="material-icons">${shareIco}</i></button>`;
+}
+
+function buildLockButton(cvId, userId, locked) {
+  let lockIco = "lock_open";
+  let lockIcoHtml = `<button id="lock_button_${cvId}" data-position="top" data-cv="${cvId}" data-user="${userId}" onClick="lockUserView(this)" class="btn-floating tooltipped `;
+  let tooltipMessage = 'data-tooltip="Lock view"';
+  if (locked === null) {
+    tooltipMessage = 'data-tooltip="View not shared"';
+    lockIcoHtml += 'disabled';
+  } else if (locked === "0") {
+    tooltipMessage = 'data-tooltip="Unlock view"';
+    lockIco = "lock_outline";
+  } else {
+    lockIcoHtml += 'locked';
+  }
+
+  return  `${lockIcoHtml}" ${tooltipMessage}><i id="i_lock_${cvId}" class="material-icons">${lockIco}</i></button>`;
+}
+
+function buildDisplayButton(cvId, userId, consumed) {
+  let displayIco = "visibility";
+  let displayIcoHtml = `<button id="display_button_${cvId}" data-position="top" data-cv="${cvId}" data-user="${userId}" onClick="consumeUserView(this)" class="btn-floating tooltipped `;
+  let tooltipMessage = 'data-tooltip="Display view"';
+  if (consumed === "1") {
+    displayIco = "visibility_off";
+    displayIcoHtml += 'consumed';
+    tooltipMessage = 'data-tooltip="Hide view"';
+  } else if (consumed === null ) {
+    displayIcoHtml += 'disabled';
+  }
+  
+  return `${displayIcoHtml}" ${tooltipMessage}><i id="i_display_${cvId}" class="material-icons">${displayIco}</i></button>`;
+}
+
+function shareToUser(el) {
+  const method = ($(el).hasClass("shared")) ? 'RemoveView' : 'AddView';
+  const cvId = parseInt(el.dataset.cv);
+  const userId =  parseInt(el.dataset.user);
+  console.log(method);
+  
+  
+  $.ajax({
+    url: './api/internal.php?object=centreon_custom_views_management&action=' + method,
+    type: 'POST',
+    contentType: 'application/json',
+    dataType: 'json',
+    data: JSON.stringify({
+      custom_view_id: cvId,
+      user_id: userId
+    }),
+    success: function() {
+      shareViews()
+    },
+    error: function(error) {
+      M.toast({html: error.responseJSON, classes: 'toastError'});
+    }
+  });
+}
+
+function lockUserView(el) {
+  if ($(el).hasClass("disabled")) {
+    return false;
+  }
+
+  const toLock = ($(el).hasClass("locked")) ? 0 : 1;
+  const cvId = parseInt(el.dataset.cv);
+  const userId =  parseInt(el.dataset.user);
+  
+  $.ajax({
+    url: './api/internal.php?object=centreon_custom_views_management&action=LockView',
+    type: 'POST',
+    contentType: 'application/json',
+    dataType: 'json',
+    data: JSON.stringify({
+      custom_view_id: cvId,
+      user_id: userId,
+      to_lock: toLock
+    }),
+    success: function() {
+      if (toLock === 0) {;
+        $("#lock_button_" + cvId).children("i").text("lock_open");
+        $("#lock_button_" + cvId).removeClass("locked");
+      } else {
+        $("#lock_button_" + cvId).children("i").text("lock_outline");
+        $("#lock_button_" + cvId).addClass("locked");
+      }
+    },
+    error: function(error) {
+      M.toast({html: error.responseJSON, classes: 'toastError'});
+    }
+  });
+}
+
+function consumeUserView(el) {
+  if ($(el).hasClass("disabled")) {
+    return false;
+  }
+
+  const toConsume = ($(el).hasClass("consumed")) ? 0 : 1;
+  const cvId = parseInt(el.dataset.cv);
+  const userId =  parseInt(el.dataset.user);
+  
+  $.ajax({
+    url: './api/internal.php?object=centreon_custom_views_management&action=ConsumeView',
+    type: 'POST',
+    contentType: 'application/json',
+    dataType: 'json',
+    data: JSON.stringify({
+      custom_view_id: cvId,
+      user_id: userId,
+      to_consume: toConsume
+    }),
+    success: function() {
+      if (toConsume === 0) {;
+        $("#display_button_" + cvId).children("i").text("visibility");
+        $("#display_button_" + cvId).removeClass("consumed");
+      } else {
+        $("#display_button_" + cvId).children("i").text("visibility_off");
+        $("#display_button_" + cvId).addClass("consumed");
+      }
+    },
+    error: function(error) {
+      M.toast({html: error.responseJSON, classes: 'toastError'});
+    }
+  });
 }
 
 $(document).ready(function () {
@@ -239,13 +329,12 @@ $(document).ready(function () {
     type: 'GET',
     contentType: 'application/json',
     success: function(data) {
-      console.log(data);
-      $(data).each(function (index) {
-        addNewCvCard(data[index].name, data[index].custom_view_id);
+      $(data).each(function () {
+        addNewCvCard(this.name, this.custom_view_id);
       });
     },
     error: function(error) {
-      console.log(error)
+      M.toast({html: error.responseJSON, classes: 'toastError'});
     }
   });
 });

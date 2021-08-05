@@ -320,7 +320,7 @@ function getSeizedViews($pearDB, $userId) {
 }
 
 function getSharableViews($pearDB, $userId, $targetUser) {
-    $query = "SELECT ccvm.custom_view_id, :target_user AS user_id, locked, is_consumed " .
+    $query = "SELECT ccvm.custom_view_id, :target_user AS user_id, locked, is_consumed, is_share " .
     "FROM mod_ccvm_custom_view_ownership ccvm LEFT JOIN custom_view_user_relation cvur " .
     "ON ccvm.custom_view_id = cvur.custom_view_id AND ccvm.new_owner=:user_id AND cvur.user_id=:target_user";
 
@@ -342,4 +342,60 @@ function getSharableViews($pearDB, $userId, $targetUser) {
     }
 
     return $result;
+}
+
+function addView($pearDB, $customViewId, $userId, $targetUser) {
+    try {
+        insertCustomView($pearDB, $customViewId, $targetUser);
+        duplicateWidgetParameters($pearDB, $customViewId, $targetUser, $userId);
+    } catch (\Exception $e) {
+        throw new Exception($e->getMessage());
+    }
+}
+
+function insertCustomView($pearDB, $customViewId, $userId) {
+    $query = "INSERT INTO custom_view_user_relation VALUES (:cv_id, :user_id, NULL, 1, 0, 1, 0)";
+
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+    $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+    } catch (\PDOException $e) {
+        throw new Exception("Could not add custom view: " . $customViewId . 
+            " to user: " . $userId . ". Error message is: " . $e->getMessage());
+    }
+}
+
+function lockView($pearDB, $customViewId, $userId, $toLock) {
+    $query = "UPDATE custom_view_user_relation SET locked=:to_lock WHERE user_id=:user_id AND custom_view_id=:cv_id";
+
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+    $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
+    $res->bindParam(':to_lock', $toLock, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+    } catch (\PDOException $e) {
+        throw new Exception("Could not set lock value to: " . $toLock . ". for user: " . $userId . 
+            "on custom view: " . $customViewId . ". Error message is: " . $e->getMessage());
+    }
+}
+
+function consumeView($pearDB, $customViewId, $userId, $toConsume) {
+    $query = "UPDATE custom_view_user_relation SET is_consumed=:to_consume WHERE user_id=:user_id AND custom_view_id=:cv_id";
+
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+    $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
+    $res->bindParam(':to_consume', $toConsume, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+    } catch (\PDOException $e) {
+        throw new Exception("Could not set consume value to: " . $toConsume . ". for user: " . $userId . 
+            "on custom view: " . $customViewId . ". Error message is: " . $e->getMessage());
+    }
 }
