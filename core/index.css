@@ -2,7 +2,70 @@
   min-width: 236px;
 }
 
-
 .toastError {
   background-color: #d8252b;
+}
+
+.red-text {
+  color: #ed1c24;
+}
+
+.green-text {
+  color: #87bd23;
+}
+
+.red-background {
+  background-color: #ed1c24;
+}
+
+.red-background:hover {
+  background-color: #ca181e;
+}
+
+.red-background:focus {
+  background-color: #ca181e;
+}
+
+
+.green-background {
+  background-color: #87bd23;
+}
+
+.green-background:hover {
+  background-color: #6b961a;
+}
+
+.green-background:focus {
+  background-color: #6b961a;
+}
+
+.modal {
+  background-color: #232f39;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  color: #DFDFDF;
+}
+
+.disabled > i{
+  color: #232f39;
+}
+
+span.badge.new {
+  font-size: 0.7rem;
+  height: 15px;
+  line-height: 15px;
+}
+
+.ccvm-centered {
+  text-align: center;
+}
+
+tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+table.highlight>tbody>tr:hover {
+  background-color:rgba(255, 255, 255, 0.05);
+  transition: background-color 0.25 ease;
+  -webkit-transition: background-color 0.25 ease;
+  -ms-transition: background-color 0.25 ease;
 }

@@ -70,10 +70,13 @@ function becomeOwner($pearDB, $customViewId, $userId) {
     } catch (\Exception $e) {
         throw new Exception($e->getMessage());
     }
+
+    return $ownerInfo;
 }
 
 function getOwnerInfo($pearDB, $customViewId) {
-    $query = "SELECT SQL_CALC_FOUND_ROWS user_id AS id FROM custom_view_user_relation WHERE custom_view_id=:id AND is_owner=1 AND locked=0";
+    $query = "SELECT SQL_CALC_FOUND_ROWS user_id AS id, contact_name FROM custom_view_user_relation cvur " .
+        "LEFT JOIN contact c ON cvur.user_id = c.contact_id WHERE custom_view_id=:id AND is_owner=1 AND locked=0";
     
     $res = $pearDB->prepare($query);
     $res->bindParam(':id', $customViewId, \PDO::PARAM_INT);
@@ -297,8 +300,9 @@ function removeModification($pearDB, $customViewId, $newOwnerId, $oldOwnerId) {
 }
 
 function getSeizedViews($pearDB, $userId) {
-    $query = "SELECT cv.name, cv.custom_view_id FROM custom_views cv, mod_ccvm_custom_view_ownership ccvm " . 
-        "WHERE ccvm.custom_view_id=cv.custom_view_id AND ccvm.new_owner=:user_id";
+    $query = "SELECT cv.name, cv.custom_view_id, c.contact_name FROM custom_views cv, mod_ccvm_custom_view_ownership ccvm " .
+        "LEFT JOIN contact c ON c.contact_id = ccvm.old_owner " .
+        "WHERE ccvm.custom_view_id=cv.custom_view_id AND ccvm.new_owner=:user_id ORDER BY cv.name DESC";
     
     $res = $pearDB->prepare($query);
     $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
@@ -320,9 +324,12 @@ function getSeizedViews($pearDB, $userId) {
 }
 
 function getSharableViews($pearDB, $userId, $targetUser) {
-    $query = "SELECT ccvm.custom_view_id, :target_user AS user_id, locked, is_consumed, is_share " .
-    "FROM mod_ccvm_custom_view_ownership ccvm LEFT JOIN custom_view_user_relation cvur " .
-    "ON ccvm.custom_view_id = cvur.custom_view_id AND ccvm.new_owner=:user_id AND cvur.user_id=:target_user";
+    $query = "SELECT cv.name,cvur.custom_view_id, cvur.user_id, ccvm.new_owner, :target_user AS target_user, " . 
+        "cvur2.locked, cvur2.is_consumed, cvur2.is_share FROM custom_view_user_relation cvur " .
+        "LEFT JOIN custom_view_user_relation cvur2 ON cvur.custom_view_id = cvur2.custom_view_id  AND cvur2.user_id=:target_user " .
+        "LEFT JOIN custom_views cv ON cv.custom_view_id = cvur.custom_view_id " .
+        "LEFT JOIN mod_ccvm_custom_view_ownership ccvm ON cvur.custom_view_id=ccvm.custom_view_id " .
+        "WHERE cvur.user_id=:user_id AND cvur.is_owner=1 ORDER BY cv.name ASC";
 
     $res = $pearDB->prepare($query);
     $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);

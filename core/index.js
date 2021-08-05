@@ -25,20 +25,21 @@ function shareViews() {
       let shared;
       
       $('#contact_views_modal_content').empty();
-      let html = '<table><thead><tr><th>Name</th><th>Share/Remove</th><th>Lock/Unlock</th><th>Enable/Disable display</th></tr></thead><tbody>';
+      let html = '<table class="highlight"><thead><tr><th>Name</th><th class="ccvm-centered">Share/Remove</th><th class="ccvm-centered">Lock/Unlock</th><th class="ccvm-centered">Enable/Disable display</th></tr></thead><tbody>';
       
       $(data).each(function () {
         cvId = this.custom_view_id;
-        userId = this.user_id;
+        userId = this.target_user;
         locked = this.locked;
         consumed = this.is_consumed;
         shared = this.is_share;
         console.log(this);
+        const badge = (this.user_id === this.new_owner) ? '<span class="new badge" data-badge-caption="seized"></span>' : '';
 
-        html += `<tr><td>${cvId}</td>` +
-          `<td>${buildShareButton(cvId, userId, shared)}</td>` +
-          `<td>${buildLockButton(cvId, userId, locked)}</td>` + 
-          `<td>${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
+        html += `<tr><td>${badge} ${this.name}</td>` +
+          `<td class="ccvm-centered">${buildShareButton(cvId, userId, shared)}</td>` +
+          `<td class="ccvm-centered">${buildLockButton(cvId, userId, locked)}</td>` + 
+          `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
       });
       html += '</tbody></table>';
 
@@ -85,7 +86,7 @@ function getContact() {
 
 function becomeOwner(el) {
   let cvId = parseInt(el.dataset.cvid);
-  let cv_name = el.dataset.cvname
+  let cvName = el.dataset.cvname
   $.ajax({
     url: './api/internal.php?object=centreon_custom_views_management&action=BecomeOwner',
     type: 'POST',
@@ -94,8 +95,8 @@ function becomeOwner(el) {
     data: JSON.stringify({
       custom_view_id: cvId
     }),
-    success: function() {
-      addNewCvCard(cv_name, cvId)
+    success: function (data) {
+      addNewCvCard(cvName, cvId, data.contact_name)
       $("#btn_add_view_" + cvId).addClass("disabled");
     },
     error: function(error) {
@@ -118,13 +119,13 @@ function triggerModal (element, href) {
 
 function appendDataToModal(data, id) {
   $('#contact_views_modal_content').empty()
-  html = '<table><thead><tr><th>Name</th><th>Owner</th><th>Locked</th><th>Seize View</th></tr></thead><tbody>';
+  html = '<table class="highlight"><thead><tr><th>Name</th><th>Owner</th><th>Locked</th><th>Seize View</th></tr></thead><tbody>';
 
   $(data).each(function () {
     // lock design
-    let lockIco = '<i class="material-icons" style="color:red">lock_outline</i>';
+    let lockIco = '<i class="material-icons red-text">lock_outline</i>';
     if (this.locked === '0') {
-      lockIco = '<i class="material-icons" style="color:green">lock_open</i>';
+      lockIco = '<i class="material-icons green-text">lock_open</i>';
     }
     
     // owner design
@@ -145,15 +146,16 @@ function appendDataToModal(data, id) {
   $('#contact_views_modal_content').append(html);
 }
 
-function addNewCvCard(cv_name, cvId) {
+function addNewCvCard(cvName, cvId, contactName) {
   let html = `<div id="card_${cvId}" class="col s3">` +
     '<div class="col s12">' +
     '<div class="card blue-grey darken-1">' +
       '<div class="card-content white-text">' +
-        `<span class="card-title">${cv_name}</span>` +
+        `<span class="card-title">${cvName}</span>` +
+        `<p>Old view owner: ${(contactName === null) ? "unknown user" : contactName}</p>` +
       '</div>' +
       '<div class="card-action">' +
-        `<a href="#" data-cvid="${cvId}" data-cvname="${cv_name}" onClick="giveBackOwnership(this)">Give back ownership</a>` +
+        `<a href="#" data-cvid="${cvId}" data-cvname="${cvName}" onClick="giveBackOwnership(this)">Give back ownership</a>` +
       '</div>' +
     '</div>' +
   '</div>' +
@@ -191,8 +193,10 @@ function buildShareButton(cvId, userId, shared) {
   let tooltipMessage = 'data-tooltip="Share view"';
   if (shared !== null) {
     shareIco = "stop_screen_share";
-    shareIcoHtml += "shared";
+    shareIcoHtml += "shared red-background";
     tooltipMessage = 'data-tooltip="Withdraw view"'
+  } else {
+    shareIcoHtml += "green-background"
   }
 
   return `${shareIcoHtml}" ${tooltipMessage}><i id="i_share_${cvId}" class="material-icons">${shareIco}</i></button>`;
@@ -208,8 +212,9 @@ function buildLockButton(cvId, userId, locked) {
   } else if (locked === "0") {
     tooltipMessage = 'data-tooltip="Unlock view"';
     lockIco = "lock_outline";
+    lockIcoHtml += 'red-background';
   } else {
-    lockIcoHtml += 'locked';
+    lockIcoHtml += 'locked green-background';
   }
 
   return  `${lockIcoHtml}" ${tooltipMessage}><i id="i_lock_${cvId}" class="material-icons">${lockIco}</i></button>`;
@@ -221,10 +226,12 @@ function buildDisplayButton(cvId, userId, consumed) {
   let tooltipMessage = 'data-tooltip="Display view"';
   if (consumed === "1") {
     displayIco = "visibility_off";
-    displayIcoHtml += 'consumed';
+    displayIcoHtml += 'consumed red-background';
     tooltipMessage = 'data-tooltip="Hide view"';
   } else if (consumed === null ) {
     displayIcoHtml += 'disabled';
+  } else {
+    displayIcoHtml += ' green-background'
   }
   
   return `${displayIcoHtml}" ${tooltipMessage}><i id="i_display_${cvId}" class="material-icons">${displayIco}</i></button>`;
@@ -275,12 +282,20 @@ function lockUserView(el) {
       to_lock: toLock
     }),
     success: function() {
-      if (toLock === 0) {;
-        $("#lock_button_" + cvId).children("i").text("lock_open");
-        $("#lock_button_" + cvId).removeClass("locked");
-      } else {
+      if (toLock === 0) {
         $("#lock_button_" + cvId).children("i").text("lock_outline");
+        $("#lock_button_" + cvId).removeClass("locked");
+        $("#lock_button_" + cvId).removeClass("green-background");
+        $("#lock_button_" + cvId).addClass("red-background");
+        console.log("on veut lock");
+        console.log($("#lock_button_" + cvId));
+      } else {
+        $("#lock_button_" + cvId).children("i").text("lock_open");
         $("#lock_button_" + cvId).addClass("locked");
+        $("#lock_button_" + cvId).removeClass("red-background");
+        $("#lock_button_" + cvId).addClass("green-background");
+        console.log("on veut unlock");
+        console.log($("#lock_button_" + cvId));
       }
     },
     error: function(error) {
@@ -312,9 +327,13 @@ function consumeUserView(el) {
       if (toConsume === 0) {;
         $("#display_button_" + cvId).children("i").text("visibility");
         $("#display_button_" + cvId).removeClass("consumed");
+        $("#display_button_" + cvId).removeClass("red-background");
+        $("#display_button_" + cvId).addClass("green-background");
       } else {
         $("#display_button_" + cvId).children("i").text("visibility_off");
         $("#display_button_" + cvId).addClass("consumed");
+        $("#display_button_" + cvId).removeClass("green-background");
+        $("#display_button_" + cvId).addClass("red-background");
       }
     },
     error: function(error) {
@@ -330,7 +349,7 @@ $(document).ready(function () {
     contentType: 'application/json',
     success: function(data) {
       $(data).each(function () {
-        addNewCvCard(this.name, this.custom_view_id);
+        addNewCvCard(this.name, this.custom_view_id, this.contact_name);
       });
     },
     error: function(error) {
