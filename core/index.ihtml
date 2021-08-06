@@ -7,7 +7,9 @@
   <script type="text/javascript" src="./modules/centreon-custom-views-management/lib/materialize.min.js"></script>
   <script type="text/javascript" src="./modules/centreon-custom-views-management/core/index.js"></script>
   <div id="contact_selection"  class="row">
-    {$form.contacts.html}
+    <div id="testing">
+      {$form.contacts.html}
+    </div>
   </div>
   <div id="action-bar" class="row">
     <button class="waves-effect waves-light btn col s2" onClick="getContact()">Import Views</button>
@@ -22,8 +24,3 @@
     <div id="contact_views_modal_content" class="modal-content"></div>
   </div>
 </body>
-{literal}
-  <script>
-    console.log('coucou');
-  </script>
-{/literal}

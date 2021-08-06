@@ -69,3 +69,14 @@ table.highlight>tbody>tr:hover {
   -webkit-transition: background-color 0.25 ease;
   -ms-transition: background-color 0.25 ease;
 }
+
+#testing {
+  display: inline-block;
+}
+
+#testing > .select2 > .selection > .select2-selection {
+  outline-color: rgba(237, 28, 36, 0);
+  outline-style: solid;
+  outline-width: 1px;
+}
+

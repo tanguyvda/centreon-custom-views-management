@@ -4,11 +4,11 @@ function shareViews() {
   let contactInfo = $("#contacts").select2('data')
   // tell to select a user
   if (contactInfo[0].id === "") {
-    // $("#error").append("You must select a contact first");
     M.toast({html: 'You must select a contact first!', classes: 'toastError'});
+    blinkSelect2($("#testing>.select2>.selection>.select2-selection"));
     return false;
   }
-
+  
   $.ajax({
     url: './api/internal.php?object=centreon_custom_views_management&action=ListSharableViews',
     type: 'POST',
@@ -33,19 +33,20 @@ function shareViews() {
         locked = this.locked;
         consumed = this.is_consumed;
         shared = this.is_share;
-        console.log(this);
+        
         const badge = (this.user_id === this.new_owner) ? '<span class="new badge" data-badge-caption="seized"></span>' : '';
-
+        
         html += `<tr><td>${badge} ${this.name}</td>` +
-          `<td class="ccvm-centered">${buildShareButton(cvId, userId, shared)}</td>` +
-          `<td class="ccvm-centered">${buildLockButton(cvId, userId, locked)}</td>` + 
-          `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
+        `<td class="ccvm-centered">${buildShareButton(cvId, userId, shared)}</td>` +
+        `<td class="ccvm-centered">${buildLockButton(cvId, userId, locked)}</td>` + 
+        `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
       });
       html += '</tbody></table>';
-
+      
       buildModal('contact_views_modal');
       $('#contact_views_modal_content').append(html);
       triggerModal($('#contact_views_modal_trigger'), "#contact_views_modal");
+      buildTooltip();
     },
     error: function(error) {
       M.toast({html: error.responseJSON, classes: 'toastError'});
@@ -58,6 +59,7 @@ function getContact() {
   // tell to select a user
   if (contactInfo[0].id === "") {
     M.toast({html: 'You must select a contact first!', classes: 'toastError'});
+    blinkSelect2($("#testing>.select2>.selection>.select2-selection"));
     return false;
   }
 
@@ -110,6 +112,10 @@ function buildModal (id) {
     const elems = document.querySelectorAll('#' + id);
     modal_instance = M.Modal.init(elems);
   }
+}
+
+function buildTooltip () {
+  M.Tooltip.init($('.tooltipped'));
 }
 
 function triggerModal (element, href) {
@@ -189,7 +195,7 @@ function giveBackOwnership(el) {
 
 function buildShareButton(cvId, userId, shared) {
   let shareIco = "screen_share";
-  let shareIcoHtml = `<button id="share_button_${cvId}" data-position="top" data-cv="${cvId}" data-user="${userId}" onClick="shareToUser(this)" class="btn-floating tooltipped `;
+  let shareIcoHtml = `<button id="share_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="shareToUser(this)" class="btn-floating tooltipped `;
   let tooltipMessage = 'data-tooltip="Share view"';
   if (shared !== null) {
     shareIco = "stop_screen_share";
@@ -204,7 +210,7 @@ function buildShareButton(cvId, userId, shared) {
 
 function buildLockButton(cvId, userId, locked) {
   let lockIco = "lock_open";
-  let lockIcoHtml = `<button id="lock_button_${cvId}" data-position="top" data-cv="${cvId}" data-user="${userId}" onClick="lockUserView(this)" class="btn-floating tooltipped `;
+  let lockIcoHtml = `<button id="lock_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="lockUserView(this)" class="btn-floating tooltipped `;
   let tooltipMessage = 'data-tooltip="Lock view"';
   if (locked === null) {
     tooltipMessage = 'data-tooltip="View not shared"';
@@ -222,7 +228,7 @@ function buildLockButton(cvId, userId, locked) {
 
 function buildDisplayButton(cvId, userId, consumed) {
   let displayIco = "visibility";
-  let displayIcoHtml = `<button id="display_button_${cvId}" data-position="top" data-cv="${cvId}" data-user="${userId}" onClick="consumeUserView(this)" class="btn-floating tooltipped `;
+  let displayIcoHtml = `<button id="display_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="consumeUserView(this)" class="btn-floating tooltipped `;
   let tooltipMessage = 'data-tooltip="Display view"';
   if (consumed === "1") {
     displayIco = "visibility_off";
@@ -241,8 +247,6 @@ function shareToUser(el) {
   const method = ($(el).hasClass("shared")) ? 'RemoveView' : 'AddView';
   const cvId = parseInt(el.dataset.cv);
   const userId =  parseInt(el.dataset.user);
-  console.log(method);
-  
   
   $.ajax({
     url: './api/internal.php?object=centreon_custom_views_management&action=' + method,
@@ -287,15 +291,13 @@ function lockUserView(el) {
         $("#lock_button_" + cvId).removeClass("locked");
         $("#lock_button_" + cvId).removeClass("green-background");
         $("#lock_button_" + cvId).addClass("red-background");
-        console.log("on veut lock");
-        console.log($("#lock_button_" + cvId));
+        buildTooltip("#lock_button_" + cvId, 'Unlock view');
       } else {
         $("#lock_button_" + cvId).children("i").text("lock_open");
         $("#lock_button_" + cvId).addClass("locked");
         $("#lock_button_" + cvId).removeClass("red-background");
         $("#lock_button_" + cvId).addClass("green-background");
-        console.log("on veut unlock");
-        console.log($("#lock_button_" + cvId));
+        buildTooltip("#lock_button_" + cvId, 'Lock view');
       }
     },
     error: function(error) {
@@ -329,17 +331,41 @@ function consumeUserView(el) {
         $("#display_button_" + cvId).removeClass("consumed");
         $("#display_button_" + cvId).removeClass("red-background");
         $("#display_button_" + cvId).addClass("green-background");
+        // data-tooltip="Hide view"
+        updateTooltip('#display_button_' + cvId, 'Display view')
       } else {
         $("#display_button_" + cvId).children("i").text("visibility_off");
         $("#display_button_" + cvId).addClass("consumed");
         $("#display_button_" + cvId).removeClass("green-background");
         $("#display_button_" + cvId).addClass("red-background");
+        updateTooltip('#display_button_' + cvId, 'Hide view')
       }
     },
     error: function(error) {
       M.toast({html: error.responseJSON, classes: 'toastError'});
     }
   });
+}
+
+function updateTooltip (id, message) {
+  const instance = M.Tooltip.getInstance($(id));
+  instance.close();
+  $(id).attr('data-tooltip', message);
+  instance.open();
+  instance.isHovered = true;
+}
+
+function blinkSelect2 (el) {
+  const originalColor = el.css("outline-color");
+  let counter = 1;
+  // el.animate({borderColor: 'rgb(237, 28, 36, 1)', borderWidth: '2px'}, 400, 'easeInCirc')
+  while (counter < 4) {
+    el.animate({outlineColor: 'rgba(237, 28, 36, 1)'}, 600, 'easeOutCubic')
+      .delay(100)
+      // .animate({borderColor: originalColor, borderWidth: originalWidth}, 2800, 'easeOutCirc');
+      .animate({outlineColor: originalColor}, 600, 'easeOutCubic');
+    counter++;
+  }
 }
 
 $(document).ready(function () {
