@@ -10,6 +10,7 @@ This community module allows you to administrate custom views for you users. You
 - Give back control of a custom view to the user that was the owner before you seized it.
 - Share one of your custom views to another user (this include your custom views and the one you've take control of).
 - Sharing a custom view gives you the possibility to set it as locked/unlocked and force its consumption to the user
+- Display proper errors if something is wrong in your database
 
 ## What it doesn't
 
@@ -29,3 +30,7 @@ This community module allows you to administrate custom views for you users. You
 ### Custom views sharing options
 
 ![share custom views to a user](screenshots/share_views.png)
+
+### Error management
+
+![display error](screenshots/error_management.png)

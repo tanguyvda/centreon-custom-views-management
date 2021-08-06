@@ -67,14 +67,18 @@ function becomeOwner($pearDB, $customViewId, $userId, $targetUser) {
         // make sure the owner exists before removing its owner rights
         if ($ownerExist !== 0) {
             removeOwnership($pearDB, $customViewId, $ownerInfo[0]['id']);
+            removeModuleOwnership($pearDB, $customViewId, $ownerInfo[0]['id']);
         }
 
-        addOwnership($pearDB, $customViewId, $userId);
+        $action = changeOwnership($pearDB, $customViewId, $userId);
         // update widget_preferences using widget_views id table
-        if ($ownerExist !== 0) {
-            duplicateWidgetParameters($pearDB, $customViewId, $userId, $ownerInfo[0]['id']);
-        } else {
-            duplicateWidgetParameters($pearDB, $customViewId, $userId, $targetUser);
+        
+        if ($action === "add") {
+            if ($ownerExist !== 0) {
+                duplicateWidgetParameters($pearDB, $customViewId, $userId, $ownerInfo[0]['id']);
+            } else {
+                duplicateWidgetParameters($pearDB, $customViewId, $userId, $targetUser);
+            }
         }
 
         // module table with info : custom_view id, old owner, new owner
@@ -124,6 +128,39 @@ function removeOwnership($pearDB, $customViewId, $userId) {
     } catch (\PDOException $e) {
         throw new Exception("Cannot remove ownership for custom view: " . $customViewId . " with owner: " . $userId .
             ". Error message is: " . $e->getMessage());
+    }
+}
+
+function removeModuleOwnership($pearDB, $customViewId, $userId) {
+    try {
+        removeModification($pearDB, $customViewId, $userId);
+    } catch (\Exception $e) {
+        throw new Exception("Tried to remove a possible ownership saved in mod_ccvm_custom_view for " .
+            "custom_view_id: " . $customViewId . " and owner: " . $userId . ". Error message is: " . $e->getMessage());
+    }
+}
+
+function changeOwnership($pearDB, $customViewId, $userId) {
+    $query = "SELECT SQL_CALC_FOUND_ROWS custom_view_id FROM custom_view_user_relation ".
+        "WHERE custom_view_id=:cv_id AND user_id=:user_id";
+
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+
+        if ($res->rowCount() === 0) {
+            addOwnership($pearDB, $customViewId, $userId);
+            return "add";
+        } else {
+            updateOwnership($pearDB, $customViewId, $userId);
+            return "update";
+        }
+    } catch (\PDOException $e) {
+        throw new Exception("Could not get custom view information for custom view: " . $customViewId .
+            " and user: " . $userId . ". Error message is: " . $e->getMessage());
     }
 }
 
