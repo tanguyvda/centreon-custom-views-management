@@ -209,10 +209,19 @@ function saveModifications($pearDB, $customViewId, $newOwnerId, $oldOwnerId) {
 }
 
 function giveBackOwnership($pearDB, $customViewId, $userId) {
-    $oldOwnerInfo = getOldOwner($pearDB, $customViewId, $userId);
-    removeDuplicatedView($pearDB, $customViewId, $userId);
-    updateOwnership($pearDB, $customViewId, $oldOwnerInfo['id']);
-    removeModification($pearDB, $customViewId, $userId, $oldOwnerInfo['id']);
+    try {
+        $oldOwnerInfo = getOldOwner($pearDB, $customViewId, $userId);
+
+        if (count($oldOwnerInfo) === 0) {
+            removeModification($pearDB, $customViewId, $userId);
+        } else {
+            removeDuplicatedView($pearDB, $customViewId, $userId);
+            updateOwnership($pearDB, $customViewId, $oldOwnerInfo['id']);
+            removeModification($pearDB, $customViewId, $userId, $oldOwnerInfo['id']);
+        }
+    } catch (\Exception $e) {
+        throw new Exception($e->getMessage());
+    }
 }
 
 function getOldOwner($pearDB, $customViewId, $userId) {
@@ -282,14 +291,20 @@ function deletePreferences($pearDB, $widgetViewId, $userId) {
     }
 }
 
-function removeModification($pearDB, $customViewId, $newOwnerId, $oldOwnerId) {
-    $query = "DELETE FROM mod_ccvm_custom_view_ownership WHERE " .
-        "custom_view_id=:cv_id AND old_owner=:old_owner AND new_owner=:new_owner";
+function removeModification($pearDB, $customViewId, $newOwnerId, $oldOwnerId = null) {
+    $query = "DELETE FROM mod_ccvm_custom_view_ownership WHERE custom_view_id=:cv_id AND new_owner=:new_owner";
+        
+    if ($oldOwnerId !== null) {
+        $query .= " AND old_owner=:old_owner";
+    }
 
     $res = $pearDB->prepare($query);
     $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
-    $res->bindParam(':old_owner', $oldOwnerId, \PDO::PARAM_INT);
     $res->bindParam(':new_owner', $newOwnerId, \PDO::PARAM_INT);
+
+    if ($oldOwnerId !== null) {
+        $res->bindParam(':old_owner', $oldOwnerId, \PDO::PARAM_INT);
+    }
 
     try {
         $res->execute();

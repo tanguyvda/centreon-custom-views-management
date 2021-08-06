@@ -153,9 +153,9 @@ function appendDataToModal(data, id) {
 }
 
 function addNewCvCard(cvName, cvId, contactName) {
-  let html = `<div id="card_${cvId}" class="col s3">` +
+  let html = `<div id="card_${cvId}" class="col s2">` +
     '<div class="col s12">' +
-    '<div class="card blue-grey darken-1">' +
+    '<div class="card">' +
       '<div class="card-content white-text">' +
         `<span class="card-title">${cvName}</span>` +
         `<p>Old view owner: ${(contactName === null) ? "unknown user" : contactName}</p>` +

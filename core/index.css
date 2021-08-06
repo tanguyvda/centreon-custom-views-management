@@ -80,3 +80,10 @@ table.highlight>tbody>tr:hover {
   outline-width: 1px;
 }
 
+.card {
+  background-color: #384957;
+}
+
+.card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating) {
+  color: #ff9913;
+}
