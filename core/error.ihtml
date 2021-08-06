@@ -1,6 +1,6 @@
 <head>
   <link href="./modules/centreon-custom-views-management/lib/materialize.min.css" rel="stylesheet" type="text/css"/>
-  <link href="./modules/centreon-custom-views-management/core/error.css" rel="stylesheet" type="text/css"/>
+  <link href="./modules/centreon-custom-views-management/core/css/error.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
   <script type="text/javascript" src="./modules/centreon-custom-views-management/lib/materialize.min.js"></script>

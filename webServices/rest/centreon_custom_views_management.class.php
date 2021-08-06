@@ -1,6 +1,6 @@
 <?php
 
-require_once _CENTREON_PATH_ . '/www/modules/centreon-custom-views-management/core/actions.php';
+require_once _CENTREON_PATH_ . '/www/modules/centreon-custom-views-management/core/actions/actions.php';
 require_once _CENTREON_PATH_ . '/www/api/class/webService.class.php';
 require_once _CENTREON_PATH_ . '/www/class/centreonSession.class.php';
 

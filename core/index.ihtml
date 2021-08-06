@@ -1,11 +1,11 @@
 <head>
   <link href="./modules/centreon-custom-views-management/lib/googlefont.css" rel="stylesheet" type="text/css"/>
   <link href="./modules/centreon-custom-views-management/lib/materialize.min.css" rel="stylesheet" type="text/css"/>
-  <link href="./modules/centreon-custom-views-management/core/index.css" rel="stylesheet" type="text/css"/>
+  <link href="./modules/centreon-custom-views-management/core/css/index.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
   <script type="text/javascript" src="./modules/centreon-custom-views-management/lib/materialize.min.js"></script>
-  <script type="text/javascript" src="./modules/centreon-custom-views-management/core/index.js"></script>
+  <script type="text/javascript" src="./modules/centreon-custom-views-management/core/js/index.js"></script>
   <div id="contact_selection"  class="row">
     <div id="testing">
       {$form.contacts.html}
