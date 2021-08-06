@@ -358,11 +358,9 @@ function updateTooltip (id, message) {
 function blinkSelect2 (el) {
   const originalColor = el.css("outline-color");
   let counter = 1;
-  // el.animate({borderColor: 'rgb(237, 28, 36, 1)', borderWidth: '2px'}, 400, 'easeInCirc')
   while (counter < 4) {
     el.animate({outlineColor: 'rgba(237, 28, 36, 1)'}, 600, 'easeOutCubic')
       .delay(100)
-      // .animate({borderColor: originalColor, borderWidth: originalWidth}, 2800, 'easeOutCirc');
       .animate({outlineColor: originalColor}, 600, 'easeOutCubic');
     counter++;
   }

@@ -1,0 +1,12 @@
+.message {
+  height: 100%;
+  display: table;
+}
+
+.error {
+  height: 100%;
+  vertical-align: middle;
+  display: table-cell;
+  line-height: 100%;
+  font-size: 2rem;
+}

@@ -13,9 +13,8 @@ if (!isset($centreon)) {
 }
 
 if (!$centreon->user->admin) {
-    echo "<pre>you're not admin</pre>";
+    $template->display('error.ihtml');
 } else {
-    echo "<pre>you're admin</pre>";
     $form = new HTML_QuickFormCustom('Form', 'post', '?p=64401');
 
     $contactRoute = './include/common/webServices/rest/internal.php?object=centreon_configuration_contact&action=list';
