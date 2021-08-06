@@ -49,7 +49,7 @@ function checkAdminOwnership($pearDB, $customViewId, $adminId) {
     return false;
 }
 
-function becomeOwner($pearDB, $customViewId, $userId) {
+function becomeOwner($pearDB, $customViewId, $userId, $targetUser) {
     try {
         // we must be sure that there is a single owner
         $ownerInfo = getOwnerInfo($pearDB, $customViewId);
@@ -57,21 +57,33 @@ function becomeOwner($pearDB, $customViewId, $userId) {
         if ($ownerInfo['id'] === $userId) {
             throw new Exception("You already are the owner of custom view: " . $customViewId);
         }
-        $file = fopen('/var/opt/rh/rh-php72/log/php-fpm/ccvm', 'a') or die ('Unable to open file!');
-        fwrite($file, print_r("\nownership\n", true));
-        fwrite($file, print_r($ownerInfo, true));
-        fclose($file);
-        removeOwnership($pearDB, $customViewId, $ownerInfo['id']);
+
+        $ownerExist = 1;
+        if (! isset($ownerInfo[0]['id']) || $ownerInfo[0]['id'] === '') {
+            $ownerExist = 0;
+            $ownerInfo[0]['id'] = null;
+        }
+
+        // make sure the owner exists before removing its owner rights
+        if ($ownerExist !== 0) {
+            removeOwnership($pearDB, $customViewId, $ownerInfo[0]['id']);
+        }
+
         addOwnership($pearDB, $customViewId, $userId);
         // update widget_preferences using widget_views id table
-        duplicateWidgetParameters($pearDB, $customViewId, $userId, $ownerInfo['id']);
+        if ($ownerExist !== 0) {
+            duplicateWidgetParameters($pearDB, $customViewId, $userId, $ownerInfo[0]['id']);
+        } else {
+            duplicateWidgetParameters($pearDB, $customViewId, $userId, $targetUser);
+        }
+
         // module table with info : custom_view id, old owner, new owner
-        saveModifications($pearDB, $customViewId, $userId, $ownerInfo['id']);
+        saveModifications($pearDB, $customViewId, $userId, $ownerInfo[0]['id']);
     } catch (\Exception $e) {
         throw new Exception($e->getMessage());
     }
 
-    return $ownerInfo;
+    return $ownerInfo[0];
 }
 
 function getOwnerInfo($pearDB, $customViewId) {
@@ -92,7 +104,12 @@ function getOwnerInfo($pearDB, $customViewId) {
         throw new Exception("There are more than one owner for custom view: " . $customViewId);
     }
 
-    return $res->fetch();
+    $result = [];
+    while ($row = $res->fetch()) {
+        $result[] = $row;
+    }
+
+    return $result;
 }
 
 function removeOwnership($pearDB, $customViewId, $userId) {
@@ -212,12 +229,12 @@ function giveBackOwnership($pearDB, $customViewId, $userId) {
     try {
         $oldOwnerInfo = getOldOwner($pearDB, $customViewId, $userId);
 
-        if (count($oldOwnerInfo) === 0) {
+        if (! isset($oldOwnerInfo[0]['id']) || $oldOwnerInfo[0]['id'] === '') {
             removeModification($pearDB, $customViewId, $userId);
         } else {
             removeDuplicatedView($pearDB, $customViewId, $userId);
-            updateOwnership($pearDB, $customViewId, $oldOwnerInfo['id']);
-            removeModification($pearDB, $customViewId, $userId, $oldOwnerInfo['id']);
+            updateOwnership($pearDB, $customViewId, $oldOwnerInfo[0]['id']);
+            removeModification($pearDB, $customViewId, $userId, $oldOwnerInfo[0]['id']);
         }
     } catch (\Exception $e) {
         throw new Exception($e->getMessage());
@@ -225,7 +242,7 @@ function giveBackOwnership($pearDB, $customViewId, $userId) {
 }
 
 function getOldOwner($pearDB, $customViewId, $userId) {
-    $query = "SELECT SQL_CALC_FOUND_ROWS old_owner as id FROM mod_ccvm_custom_view_ownership WHERE new_owner=:user_id AND custom_view_id=:cv_id";
+    $query = "SELECT SQL_CALC_FOUND_ROWS old_owner AS id FROM mod_ccvm_custom_view_ownership WHERE new_owner=:user_id AND custom_view_id=:cv_id";
 
     $res = $pearDB->prepare($query);
     $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
@@ -243,7 +260,12 @@ function getOldOwner($pearDB, $customViewId, $userId) {
             " and current owner: " . $userId);
     }
 
-    return $res->fetch(); 
+    $result = [];
+    while ($row = $res->fetch()) {
+        $result[] = $row;
+    }
+
+    return $result; 
 }
 
 function removeDuplicatedView($pearDB, $customViewId, $userId) {

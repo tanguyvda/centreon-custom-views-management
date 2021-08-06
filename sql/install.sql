@@ -23,6 +23,7 @@ CREATE TABLE `mod_ccvm_custom_view_ownership` (
 -- 
 ALTER TABLE mod_ccvm_custom_view_ownership
 ADD CONSTRAINT uk_viewowner UNIQUE (custom_view_id, new_owner);
+
 -- 
 -- foreign keys
 --

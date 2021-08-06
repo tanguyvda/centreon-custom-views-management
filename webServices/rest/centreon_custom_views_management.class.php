@@ -41,9 +41,10 @@ class CentreonCustomViewsManagement extends CentreonWebService
 
         global $centreon;
         $customViewId = filter_var($this->arguments['custom_view_id'], FILTER_SANITIZE_NUMBER_INT);
+        $targetUser = filter_var($this->arguments['target_user'], FILTER_SANITIZE_NUMBER_INT);
         
         try {
-            $result = becomeOwner($this->db, $customViewId, $centreon->user->user_id);
+            $result = becomeOwner($this->db, $customViewId, $centreon->user->user_id, $targetUser);
         } catch (\Exception $e) {
             throw new RestBadRequestException($e->getMessage());
         }

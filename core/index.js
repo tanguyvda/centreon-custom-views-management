@@ -87,15 +87,17 @@ function getContact() {
 }
 
 function becomeOwner(el) {
-  let cvId = parseInt(el.dataset.cvid);
-  let cvName = el.dataset.cvname
+  const cvId = parseInt(el.dataset.cvid);
+  const cvName = el.dataset.cvname;
+  const userId = el.dataset.userid;
   $.ajax({
     url: './api/internal.php?object=centreon_custom_views_management&action=BecomeOwner',
     type: 'POST',
     contentType: 'application/json',
     dataType: 'json',
     data: JSON.stringify({
-      custom_view_id: cvId
+      custom_view_id: cvId,
+      target_user: userId
     }),
     success: function (data) {
       addNewCvCard(cvName, cvId, data.contact_name)
@@ -140,9 +142,9 @@ function appendDataToModal(data, id) {
       owner_ico = '<i class="material-icons" style="opacity:100%">person_pin</i>';
     }
 
-    let add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating" data-cvid="${this.custom_view_id}" data-cvname="${this.name}" onClick="becomeOwner(this)"><i class="material-icons">add</i></button>`;
+    let add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating" data-userid="${this.contact_id}" data-cvid="${this.custom_view_id}" data-cvname="${this.name}" onClick="becomeOwner(this)"><i class="material-icons">add</i></button>`;
     if (this.already_owned) {
-      add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating disabled" data-cvid="${this.custom_view_id}" data-cvname="${this.name}"><i class="material-icons">add</i></button>`;
+      add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating disabled" data-userid="${this.contact_id}" data-cvid="${this.custom_view_id}" data-cvname="${this.name}"><i class="material-icons">add</i></button>`;
     }
 
     html += `<tr><td>${this.name}</td><td>${owner_ico}</td><td>${lockIco}</td><td>${add_button}</td></tr>`; //lock_open person_pin lock_outling
@@ -165,7 +167,7 @@ function addNewCvCard(cvName, cvId, contactName) {
       '</div>' +
     '</div>' +
   '</div>' +
-'</div>"';
+'</div>';
 
   $("#seized_custom_views").prepend(html);
 }
@@ -175,7 +177,7 @@ function removeCard(cvId) {
 }
 
 function giveBackOwnership(el) {
-  let cvId = parseInt(el.dataset.cvid);
+  const cvId = parseInt(el.dataset.cvid);
   $.ajax({
     url: './api/internal.php?object=centreon_custom_views_management&action=GiveBackOwnership',
     type: 'POST',
