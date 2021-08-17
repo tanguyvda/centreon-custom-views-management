@@ -1,5 +1,9 @@
 var modal_instance;
 
+/**
+ * Display a popup with all sharable views that the admin user has
+ * @returns false if no contact is selected
+ */
 function shareViews() {
   let contactInfo = $("#contacts").select2('data')
   // tell to select a user
@@ -53,6 +57,10 @@ function shareViews() {
   });
 }
 
+/**
+ * get custom views that are shared to a user
+ * @returns false if no contact is selected
+ */
 function getContact() {
   let contactInfo = $("#contacts").select2('data')
   // tell to select a user
