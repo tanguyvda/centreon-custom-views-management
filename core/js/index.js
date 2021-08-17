@@ -41,8 +41,7 @@ function shareViews() {
         `<td class="ccvm-centered">${buildLockButton(cvId, userId, locked)}</td>` + 
         `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
       });
-      html += '</tbody></table>';
-      
+      html += '</tbody></table>'; 
       buildModal('contact_views_modal');
       $('#contact_views_modal_content').append(html);
       triggerModal($('#contact_views_modal_trigger'), "#contact_views_modal");
@@ -86,6 +85,10 @@ function getContact() {
   });
 }
 
+/**
+ * become owner of the selected custom view
+ * @param {element} el the element that has been selected
+ */
 function becomeOwner(el) {
   const cvId = parseInt(el.dataset.cvid);
   const cvName = el.dataset.cvname;
