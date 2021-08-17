@@ -1,5 +1,9 @@
 var modal_instance;
 
+/**
+ * Display a popup with all sharable views that the admin user has
+ * @returns false if no contact is selected
+ */
 function shareViews() {
   let contactInfo = $("#contacts").select2('data')
   // tell to select a user
@@ -41,12 +45,11 @@ function shareViews() {
         `<td class="ccvm-centered">${buildLockButton(cvId, userId, locked)}</td>` + 
         `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
       });
-      html += '</tbody></table>';
-      
+      html += '</tbody></table>'; 
       buildModal('contact_views_modal');
       $('#contact_views_modal_content').append(html);
       triggerModal($('#contact_views_modal_trigger'), "#contact_views_modal");
-      buildTooltip();
+      buildTooltip('action');
     },
     error: function(error) {
       M.toast({html: error.responseJSON, classes: 'toastError'});
@@ -54,6 +57,10 @@ function shareViews() {
   });
 }
 
+/**
+ * get custom views that are shared to a user
+ * @returns false if no contact is selected
+ */
 function getContact() {
   let contactInfo = $("#contacts").select2('data')
   // tell to select a user
@@ -86,6 +93,10 @@ function getContact() {
   });
 }
 
+/**
+ * become owner of the selected custom view
+ * @param {element} el the element that has been selected
+ */
 function becomeOwner(el) {
   const cvId = parseInt(el.dataset.cvid);
   const cvName = el.dataset.cvname;
@@ -116,8 +127,8 @@ function buildModal (id) {
   }
 }
 
-function buildTooltip () {
-  M.Tooltip.init($('.tooltipped'));
+function buildTooltip (className) {
+  M.Tooltip.init($('.' + className));
 }
 
 function triggerModal (element, href) {
@@ -126,23 +137,29 @@ function triggerModal (element, href) {
 }
 
 function appendDataToModal(data, id) {
+  let instance;
+  $('.info-tip').each(function () {
+    instance = M.Tooltip.getInstance($(this));
+    instance.destroy();
+  });
+
   $('#contact_views_modal_content').empty()
   html = '<table class="highlight"><thead><tr><th>Name</th><th>Owner</th><th>Locked</th><th>Seize View</th></tr></thead><tbody>';
 
   $(data).each(function () {
     // lock design
-    let lockIco = '<i class="material-icons red-text">lock_outline</i>';
+    let lockIco = '<i class="material-icons info-tip tooltipped red-text" data-position="right" data-tooltip="view is locked">lock_outline</i>';
     if (this.locked === '0') {
-      lockIco = '<i class="material-icons green-text">lock_open</i>';
+      lockIco = '<i class="material-icons info-tip tooltipped green-text" data-position="right" data-tooltip="view is not locked">lock_open</i>';
     }
     
     // owner design
-    let owner_ico = '<i class="material-icons" style="opacity:25%">person_pin</i>';
+    let owner_ico = `<i class="material-icons info-tip tooltipped" data-position="right" data-tooltip="${this.contact_name} does not own this view" style="opacity:25%">person_pin</i>`;
     if (this.is_owner === '1') {
-      owner_ico = '<i class="material-icons" style="opacity:100%">person_pin</i>';
+      owner_ico = `<i class="material-icons info-tip tooltipped" data-position="right" data-tooltip="${this.contact_name} owns this view" style="opacity:100%">person_pin</i>`;
     }
 
-    let add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating" data-userid="${this.contact_id}" data-cvid="${this.custom_view_id}" data-cvname="${this.name}" onClick="becomeOwner(this)"><i class="material-icons">add</i></button>`;
+    let add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating info-tip tooltipped" data-position="right" data-tooltip="Become the view owner" data-userid="${this.contact_id}" data-cvid="${this.custom_view_id}" data-cvname="${this.name}" onClick="becomeOwner(this)"><i class="material-icons">add</i></button>`;
     if (this.already_owned) {
       add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating disabled" data-userid="${this.contact_id}" data-cvid="${this.custom_view_id}" data-cvname="${this.name}"><i class="material-icons">add</i></button>`;
     }
@@ -152,6 +169,7 @@ function appendDataToModal(data, id) {
 
   html += '</tbody></table>';
   $('#contact_views_modal_content').append(html);
+  buildTooltip('info-tip');
 }
 
 function addNewCvCard(cvName, cvId, contactName) {
@@ -197,7 +215,7 @@ function giveBackOwnership(el) {
 
 function buildShareButton(cvId, userId, shared) {
   let shareIco = "screen_share";
-  let shareIcoHtml = `<button id="share_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="shareToUser(this)" class="btn-floating tooltipped `;
+  let shareIcoHtml = `<button id="share_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="shareToUser(this)" class="btn-floating action tooltipped `;
   let tooltipMessage = 'data-tooltip="Share view"';
   if (shared !== null) {
     shareIco = "stop_screen_share";
@@ -212,16 +230,16 @@ function buildShareButton(cvId, userId, shared) {
 
 function buildLockButton(cvId, userId, locked) {
   let lockIco = "lock_open";
-  let lockIcoHtml = `<button id="lock_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="lockUserView(this)" class="btn-floating tooltipped `;
+  let lockIcoHtml = `<button id="lock_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="lockUserView(this)" class="btn-floating action tooltipped `;
   let tooltipMessage = 'data-tooltip="Lock view"';
   if (locked === null) {
     tooltipMessage = 'data-tooltip="View not shared"';
     lockIcoHtml += 'disabled';
   } else if (locked === "0") {
-    tooltipMessage = 'data-tooltip="Unlock view"';
     lockIco = "lock_outline";
     lockIcoHtml += 'red-background';
   } else {
+    tooltipMessage = 'data-tooltip="Unlock view"';
     lockIcoHtml += 'locked green-background';
   }
 
@@ -230,7 +248,7 @@ function buildLockButton(cvId, userId, locked) {
 
 function buildDisplayButton(cvId, userId, consumed) {
   let displayIco = "visibility";
-  let displayIcoHtml = `<button id="display_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="consumeUserView(this)" class="btn-floating tooltipped `;
+  let displayIcoHtml = `<button id="display_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="consumeUserView(this)" class="btn-floating action tooltipped `;
   let tooltipMessage = 'data-tooltip="Display view"';
   if (consumed === "1") {
     displayIco = "visibility_off";
@@ -260,6 +278,11 @@ function shareToUser(el) {
       user_id: userId
     }),
     success: function() {
+      let instance;
+      $('.tooltipped').each(function() {
+        instance = M.Tooltip.getInstance($(this));
+        instance.destroy();
+      })
       shareViews()
     },
     error: function(error) {
@@ -293,13 +316,13 @@ function lockUserView(el) {
         $("#lock_button_" + cvId).removeClass("locked");
         $("#lock_button_" + cvId).removeClass("green-background");
         $("#lock_button_" + cvId).addClass("red-background");
-        buildTooltip("#lock_button_" + cvId, 'Unlock view');
+        updateTooltip("#lock_button_" + cvId, 'Lock view');
       } else {
         $("#lock_button_" + cvId).children("i").text("lock_open");
         $("#lock_button_" + cvId).addClass("locked");
         $("#lock_button_" + cvId).removeClass("red-background");
         $("#lock_button_" + cvId).addClass("green-background");
-        buildTooltip("#lock_button_" + cvId, 'Lock view');
+        updateTooltip("#lock_button_" + cvId, 'Unlock view');
       }
     },
     error: function(error) {
@@ -333,7 +356,6 @@ function consumeUserView(el) {
         $("#display_button_" + cvId).removeClass("consumed");
         $("#display_button_" + cvId).removeClass("red-background");
         $("#display_button_" + cvId).addClass("green-background");
-        // data-tooltip="Hide view"
         updateTooltip('#display_button_' + cvId, 'Display view')
       } else {
         $("#display_button_" + cvId).children("i").text("visibility_off");
