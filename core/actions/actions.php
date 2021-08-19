@@ -399,7 +399,7 @@ function getSeizedViews($pearDB, $userId) {
 
 function getSharableViews($pearDB, $userId, $targetUser) {
     $query = "SELECT cv.name,cvur.custom_view_id, cvur.user_id, ccvm.new_owner, :target_user AS target_user, " . 
-        "cvur2.locked, cvur2.is_consumed, cvur2.is_share FROM custom_view_user_relation cvur " .
+        "cvur2.locked, cvur2.is_consumed, cvur2.is_share, cvur2.is_owner FROM custom_view_user_relation cvur " .
         "LEFT JOIN custom_view_user_relation cvur2 ON cvur.custom_view_id = cvur2.custom_view_id  AND cvur2.user_id=:target_user " .
         "LEFT JOIN custom_views cv ON cv.custom_view_id = cvur.custom_view_id " .
         "LEFT JOIN mod_ccvm_custom_view_ownership ccvm ON cvur.custom_view_id=ccvm.custom_view_id " .
@@ -479,4 +479,43 @@ function consumeView($pearDB, $customViewId, $userId, $toConsume) {
         throw new Exception("Could not set consume value to: " . $toConsume . ". for user: " . $userId . 
             "on custom view: " . $customViewId . ". Error message is: " . $e->getMessage());
     }
+}
+
+function giveOwnerShip($pearDB, $customViewId, $owner, $targetUser) {
+    try {
+        removeModification($pearDB, $customViewId, $owner);
+        
+        if (!isAlreadyShared($pearDB, $customViewId, $targetUser)) {
+            addView($pearDB, $customViewId, $owner, $targetUser);
+            lockView($pearDB, $customViewId, $targetUser, 0);
+            consumeView($pearDB, $customViewId, $targetUser, 1);
+        }
+    
+        removeDuplicatedView($pearDB, $customViewId, $owner);
+        updateOwnership($pearDB, $customViewId, $targetUser);
+    } catch (\Exception $e) {
+        throw new Exception("Could not give ownership to user: " . $targetUser . 
+            " for custom view: " . $customViewId . ". Error message is: " . $e->getMessage());
+    }
+}
+
+function isAlreadyShared($pearDB, $customViewId, $userId) {
+    $query = "SELECT SQL_CALC_FOUND_ROWS * FROM custom_view_user_relation WHERE custom_view_id=:cv_id AND user_id=:user_id";
+
+    $res = $pearDB->prepare($query);
+    $res->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+    $res->bindParam(':cv_id', $customViewId, \PDO::PARAM_INT);
+
+    try {
+        $res->execute();
+    } catch (\PDOException $e) {
+        throw new Exception("Could not check if the the user: " . $userId . " has the custom view: " . $customViewId . 
+            ". Error message is: " . $e->getMessage());
+    }
+
+    if ($res->rowCount() === 0) {
+        return false;
+    }
+
+    return true;
 }

@@ -138,4 +138,16 @@ class CentreonCustomViewsManagement extends CentreonWebService
             throw new RestBadRequestException($e->getMessage());
         }
     }
+
+    public function postGiveOwnership() {
+        global $centreon;
+        $targetUser = filter_var($this->arguments['user_id'], FILTER_SANITIZE_NUMBER_INT);
+        $customViewId = filter_var($this->arguments['custom_view_id'], FILTER_SANITIZE_NUMBER_INT);
+
+        try {
+            giveOwnerShip($this->db, $customViewId, $centreon->user->user_id, $targetUser);
+        } catch (\Exception $e) {
+            throw new RestBadRequestException($e->getMessage());
+        }
+    }
 }
