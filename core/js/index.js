@@ -29,7 +29,7 @@ function shareViews() {
       let shared;
       
       $('#contact_views_modal_content').empty();
-      let html = '<table class="highlight"><thead><tr><th>Name</th><th class="ccvm-centered">Share/Remove</th><th class="ccvm-centered">Lock/Unlock</th><th class="ccvm-centered">Enable/Disable display</th></tr></thead><tbody>';
+      let html = '<table class="highlight"><thead><tr><th>Name</th><th class="ccvm-centered">Share/Remove</th><th class="ccvm-centered">Lock/Unlock</th><th class="ccvm-centered">Enable/Disable display</th><th class="ccvm-centered">Grant admin rights</th></tr></thead><tbody>';
       
       $(data).each(function () {
         cvId = this.custom_view_id;
@@ -37,13 +37,15 @@ function shareViews() {
         locked = this.locked;
         consumed = this.is_consumed;
         shared = this.is_share;
+        owner = this.is_owner;
         
         const badge = (this.user_id === this.new_owner) ? '<span class="new badge" data-badge-caption="seized"></span>' : '';
         
-        html += `<tr><td>${badge} ${this.name}</td>` +
+        html += `<tr id="tr_cv_${cvId}"><td>${badge} ${this.name}</td>` +
         `<td class="ccvm-centered">${buildShareButton(cvId, userId, shared)}</td>` +
         `<td class="ccvm-centered">${buildLockButton(cvId, userId, locked)}</td>` + 
-        `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td></tr>`;
+        `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td>` +
+        `<td class="ccvm-centered">${buildGrantAdminButton(cvId, userId, owner)}</td></tr>`;
       });
       html += '</tbody></table>'; 
       buildModal('contact_views_modal');
@@ -263,6 +265,44 @@ function buildDisplayButton(cvId, userId, consumed) {
   return `${displayIcoHtml}" ${tooltipMessage}><i id="i_display_${cvId}" class="material-icons">${displayIco}</i></button>`;
 }
 
+function buildGrantAdminButton(cvId, userId, ownership) {
+  const accountIco = "account_circle";
+  let accountIcoHtml;
+  let tooltipMessage;
+
+  if (ownership === "0") {
+    accountIcoHtml = `<button id="account_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="giveOwnerShip(this)" class="btn-floating action tooltipped green-background`;
+    tooltipMessage = 'data-tooltip="grant admin rights"';
+  } else {
+    accountIcoHtml = `<button id="account_button_${cvId}" data-position="right" data-cv="${cvId}" data-user="${userId}" onClick="giveOwnerShip(this)" class="btn-floating disabled action tooltipped green-background`;
+    tooltipMessage = 'data-tooltip="grant admin rights"';
+  }
+
+  return `${accountIcoHtml}" ${tooltipMessage}><i id="i_account_${cvId}" class="material-icons">${accountIco}</i></button>`;
+}
+
+function giveOwnerShip(el) {
+  const cvId = parseInt(el.dataset.cv);
+  const userId = parseInt(el.dataset.user);
+
+  $.ajax({
+    url: './api/internal.php?object=centreon_custom_views_management&action=GiveOwnership',
+    type: 'POST',
+    contentType: 'application/json',
+    dataType: 'json',
+    data: JSON.stringify({
+      custom_view_id: cvId,
+      user_id: userId
+    }),
+    success: function() {
+      disableAllbuttons(cvId);
+    },
+    error: function(error) {
+      M.toast({html: error.responseJSON, classes: 'toastError'});
+    }
+  });
+}
+
 function shareToUser(el) {
   const method = ($(el).hasClass("shared")) ? 'RemoveView' : 'AddView';
   const cvId = parseInt(el.dataset.cv);
@@ -279,7 +319,7 @@ function shareToUser(el) {
     }),
     success: function() {
       let instance;
-      $('.tooltipped').each(function() {
+      $('.action').each(function() {
         instance = M.Tooltip.getInstance($(this));
         instance.destroy();
       })
@@ -388,6 +428,15 @@ function blinkSelect2 (el) {
       .animate({outlineColor: originalColor}, 600, 'easeOutCubic');
     counter++;
   }
+}
+
+function disableAllbuttons(cvId) {
+  let instance;
+  $(`#tr_cv_${cvId}`).find('.action').each(function () {
+    instance = M.Tooltip.getInstance($(this));
+    instance.destroy();
+    $(this).addClass('disabled');
+  });
 }
 
 $(document).ready(function () {
