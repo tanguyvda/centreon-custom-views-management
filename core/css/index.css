@@ -87,3 +87,7 @@ table.highlight>tbody>tr:hover {
 .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating) {
   color: #ff9913;
 }
+
+.admin-column {
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
+}

@@ -41,11 +41,11 @@ function shareViews() {
         
         const badge = (this.user_id === this.new_owner) ? '<span class="new badge" data-badge-caption="seized"></span>' : '';
         
-        html += `<tr id="tr_cv_${cvId}"><td>${badge} ${this.name}</td>` +
+        html += `<tr id="tr_cv_${cvId}"><td>${badge} ${this.name} (view id: ${this.custom_view_id})</td>` +
         `<td class="ccvm-centered">${buildShareButton(cvId, userId, shared)}</td>` +
         `<td class="ccvm-centered">${buildLockButton(cvId, userId, locked)}</td>` + 
         `<td class="ccvm-centered">${buildDisplayButton(cvId, userId, consumed)}</td>` +
-        `<td class="ccvm-centered">${buildGrantAdminButton(cvId, userId, owner)}</td></tr>`;
+        `<td class="ccvm-centered admin-column">${buildGrantAdminButton(cvId, userId, owner)}</td></tr>`;
       });
       html += '</tbody></table>'; 
       buildModal('contact_views_modal');
@@ -166,7 +166,7 @@ function appendDataToModal(data, id) {
       add_button = `<button id="btn_add_view_${this.custom_view_id}" class="btn-floating disabled" data-userid="${this.contact_id}" data-cvid="${this.custom_view_id}" data-cvname="${this.name}"><i class="material-icons">add</i></button>`;
     }
 
-    html += `<tr><td>${this.name}</td><td>${owner_ico}</td><td>${lockIco}</td><td>${add_button}</td></tr>`; //lock_open person_pin lock_outling
+    html += `<tr><td>${this.name} (view id: ${this.custom_view_id})</td><td>${owner_ico}</td><td>${lockIco}</td><td>${add_button}</td></tr>`; //lock_open person_pin lock_outling
   });
 
   html += '</tbody></table>';
