@@ -23,6 +23,7 @@ This community module allows you to administrate custom views for you users. You
 - unzip the archive and put the centreon-custom-views-management folder inside the /usr/share/centreon/www/modules/ directory of your central server
 - install the module through the web interface in the administration->extension->modules menu
 
+You now have a new custom-views-management tab in the configuration menu
 
 ## Screenshots
 
