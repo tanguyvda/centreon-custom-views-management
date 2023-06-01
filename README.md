@@ -17,6 +17,13 @@ This community module allows you to administrate custom views for you users. You
 - Sharing options are limited to users, you can't share to user groups. (may come in a later release)
 - Will not bring an additional olympic gold medal to your favorite country
 
+## Installation
+
+- Download the latest release of this Centreon module https://github.com/tanguyvda/centreon-custom-views-management/releases/
+- unzip the archive and put the centreon-custom-views-management folder inside the /usr/share/centreon/www/modules/ directory of your central server
+- install the module through the web interface in the administration->extension->modules menu
+
+
 ## Screenshots
 
 ### Import custom views from a user
